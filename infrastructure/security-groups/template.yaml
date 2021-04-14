@@ -1,0 +1,95 @@
+# /security-groups/template.yaml
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+  This template contains the security groups required by our entire stack.
+  We create them in a seperate nested template, so they can be referenced
+  by all of the other nested templates.
+
+Parameters:
+  ProjectName:
+    Description: The projects call sign that will be prefixed to resource names
+    Type: String
+
+  TagCreatorParameter:
+    Description: The email of the entity whom this project belongs to
+    Type: String
+
+  VPC:
+    Description: Choose which VPC the security groups should be deployed to
+    Type: AWS::EC2::VPC::Id
+
+Resources:
+  ##
+  ## ::SecurityGroup
+  ##
+  SecurityGroupALB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http and https to client host for ALB
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        # Allow access from anywhere to our ECS services
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   CidrIp: 0.0.0.0/0
+        # - IpProtocol: tcp
+        #   FromPort: 443
+        #   ToPort: 443
+        #   CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   CidrIp: 0.0.0.0/0
+        # - IpProtocol: tcp
+        #   FromPort: 443
+        #   ToPort: 443
+        #   CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: created_by
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-alb
+
+  SecurityGroupECS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host for ECS
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   CidrIp: 0.0.0.0/0
+        - IpProtocol: "-1"
+          # FromPort: -1
+          # ToPort: -1
+          SourceSecurityGroupId: !Ref SecurityGroupALB
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: created_by
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-ecs
+
+Outputs:
+  ALB:
+    Description: A reference to the security group for load balancers
+    Value: !Ref SecurityGroupALB
+
+  ECS:
+    Description: A reference to the security group for ECS hosts
+    Value: !Ref SecurityGroupECS

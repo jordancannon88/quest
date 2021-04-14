@@ -1,0 +1,78 @@
+# template.yaml
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: ""
+
+Parameters:
+  TagCreatorParameter:
+    Description: The email of the entity whom this project belongs to
+    Type: String
+    Default: jocannon@1strategy.com
+
+  SSLCert:
+    Description: The ARN for the manually created SSL cert to be used for the Application Load Balancer
+    Type: String
+
+  Image:
+    Description: The URI to the docker image to be used with the ECS Service
+    Type: String
+
+  Secret:
+    Description: The secret word found in the webpage
+    Type: String
+    Default: "TwelveFactor"
+
+Resources:
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: infrastructure/vpc/template.yaml
+      Parameters:
+        ProjectName: !Ref AWS::StackName
+        TagCreatorParameter: !Ref TagCreatorParameter
+        # CIDR Calculator: https://www.davidc.net/sites/default/subnets/subnets.html
+        VpcCIDR: 10.0.0.0/24
+        SubnetPublic1CIDR: 10.0.0.0/26
+        SubnetPublic2CIDR: 10.0.0.64/26
+        SubnetPrivate1CIDR: 10.0.0.128/26
+        SubnetPrivate2CIDR: 10.0.0.192/26
+
+  SecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: infrastructure/security-groups/template.yaml
+      Parameters:
+        ProjectName: !Ref AWS::StackName
+        TagCreatorParameter: !Ref TagCreatorParameter
+        VPC: !GetAtt VPC.Outputs.VPC
+
+  ALB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: infrastructure/alb/template.yaml
+      Parameters:
+        ProjectName: !Ref AWS::StackName
+        TagCreatorParameter: !Ref TagCreatorParameter
+        Subnets: !GetAtt VPC.Outputs.SubnetsPublic
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.ALB
+
+  ECS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: infrastructure/ecs/template.yaml
+      Parameters:
+        ProjectName: !Ref AWS::StackName
+        TagCreatorParameter: !Ref TagCreatorParameter
+        VPC: !GetAtt VPC.Outputs.VPC
+        Subnets: !GetAtt VPC.Outputs.SubnetsPrivate
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.ECS
+        LoadBalancer: !GetAtt ALB.Outputs.LoadBalancer
+        SSLCert: !Ref SSLCert
+        Image: !Ref Image
+        Secret: !Ref Secret
+
+Outputs:
+  LoadBalancerUrl:
+    Description: The URL of the ALB
+    Value: !GetAtt ALB.Outputs.LoadBalancerUrl

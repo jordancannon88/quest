@@ -1,0 +1,326 @@
+# /vpc/template.yaml
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+  This template deploys a VPC, with a pair of public and private subnets spread 
+  across two Availabilty Zones. It deploys an Internet Gateway, with a default 
+  route on the public subnets. It deploys a pair of NAT Gateways (one in each AZ), 
+  and default routes for them in the private subnets.
+
+Parameters:
+  ProjectName:
+    Description: The projects call sign that will be prefixed to resource names
+    Type: String
+
+  TagCreatorParameter:
+    Description: The email of the entity whom this project belongs to
+    Type: String
+
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+
+  SubnetPublic1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+
+  SubnetPublic2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+
+  SubnetPrivate1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+
+  SubnetPrivate2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+
+Resources:
+  ##
+  ## ::VPC
+  ##
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-vpc
+
+  ##
+  ## ::Subnet
+  ##
+  SubnetPublic1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetPublic1CIDR
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-subnet-public-a
+
+  SubnetPublic2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetPublic2CIDR
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-subnet-public-b
+
+  SubnetPrivate1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetPrivate1CIDR
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-subnet-private-a
+
+  SubnetPrivate2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SubnetPrivate2CIDR
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-subnet-private-b
+
+  ##
+  ## ::RouteTable
+  ##
+  RouteTablePublic:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-rt-public
+
+  RouteTablePrivate1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-rt-private-a
+
+  RouteTablePrivate2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-rt-private-b
+
+  ##
+  ## ::SubnetRouteTableAssociation
+  ##
+  SubnetRouteTableAssociationPublic1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPublic1
+      RouteTableId:
+        Ref: RouteTablePublic
+
+  SubnetRouteTableAssociationPublic2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPublic2
+      RouteTableId:
+        Ref: RouteTablePublic
+
+  SubnetRouteTableAssociationPrivate1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPrivate1
+      RouteTableId:
+        Ref: RouteTablePrivate1
+
+  SubnetRouteTableAssociationPrivate2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: SubnetPrivate2
+      RouteTableId:
+        Ref: RouteTablePrivate2
+
+  ##
+  ## ::Route
+  ##
+  RoutePublic:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePublic
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+
+  RoutePrivate1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePrivate1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NAT1
+
+  RoutePrivate2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: RouteTablePrivate2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NAT2
+
+  ##
+  ## ::NatGateway
+  ##
+  NAT1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EIP1
+          - AllocationId
+      SubnetId:
+        Ref: SubnetPublic1
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-public-a
+
+  NAT2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EIP2
+          - AllocationId
+      SubnetId:
+        Ref: SubnetPublic2
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-public-b
+
+  ##
+  ## ::EIP
+  ##
+  EIP1:
+    DependsOn: AttachGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-eip-public-a
+
+  EIP2:
+    DependsOn: AttachGateway
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-eip-public-b
+
+  ##
+  ## ::InternetGateway
+  ##
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Creator
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-igw
+
+  ##
+  ## ::VPCGatewayAttachment
+  ##
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+
+  SubnetsPublic:
+    Description: A list of the public subnets
+    Value: !Join [",", [!Ref SubnetPublic1, !Ref SubnetPublic2]]
+
+  SubnetsPrivate:
+    Description: A list of the private subnets
+    Value: !Join [",", [!Ref SubnetPrivate1, !Ref SubnetPrivate2]]
+
+  SubnetPublic1:
+    Description: A reference to the public subnet in the 1st Availability Zone
+    Value: !Ref SubnetPublic1
+
+  SubnetPublic2:
+    Description: A reference to the public subnet in the 2nd Availability Zone
+    Value: !Ref SubnetPublic2
+
+  SubnetPrivate1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref SubnetPrivate1
+
+  SubnetPrivate2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref SubnetPrivate2

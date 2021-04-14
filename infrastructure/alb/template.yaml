@@ -1,0 +1,69 @@
+# /alb/template.yaml
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+  This template deploys an Application Load Balancer that exposes an ECS service.
+
+Parameters:
+  ProjectName:
+    Description: The projects call sign that will be prefixed to resource names
+    Type: String
+
+  TagCreatorParameter:
+    Description: The email of the entity whom this project belongs to
+    Type: String
+
+  SecurityGroup:
+    Description: Select the Security Group to apply to the Application Load Balancer
+    Type: AWS::EC2::SecurityGroup::Id
+
+  Subnets:
+    Description: Choose which subnets the Application Load Balancer should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  ##
+  ## ::LoadBalancer
+  ##
+  LoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Name: !Sub ${ProjectName}-alb
+      Scheme: internet-facing
+      Subnets: !Ref Subnets
+      SecurityGroups:
+        - !Ref SecurityGroup
+      Tags:
+        - Key: created_by
+          Value: !Ref TagCreatorParameter
+        - Key: Name
+          Value: !Sub ${ProjectName}-alb
+
+  ##
+  ## ::Listener
+  ##
+  HTTPlistener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+      DefaultActions:
+        - Type: "redirect"
+          RedirectConfig:
+            Protocol: "HTTPS"
+            Port: "443"
+            Host: "#{host}"
+            Path: "/#{path}"
+            Query: "#{query}"
+            StatusCode: "HTTP_301"
+
+Outputs:
+  LoadBalancer:
+    Description: A reference to the Application Load Balancer
+    Value: !Ref LoadBalancer
+
+  LoadBalancerUrl:
+    Description: The URL of the ALB
+    Value: !GetAtt LoadBalancer.DNSName

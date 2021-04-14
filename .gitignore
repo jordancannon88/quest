@@ -1,0 +1,8 @@
+# Ignore everything in this folder
+docker/quest/*
+
+# But not these files...
+!docker/quest/Dockerfile
+
+# Other
+packaged.yaml
