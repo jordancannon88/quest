@@ -102,12 +102,12 @@ Resources:
               Value: !Ref Secret
           PortMappings:
             - ContainerPort: 3000
-          # LogConfiguration:
-          #   LogDriver: awslogs
-          #   Options:
-          #     awslogs-group: "/ecs/fargate-task-definition"
-          #     awslogs-region: "us-east-1"
-          #     awslogs-stream-prefix: "ecs"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
           Memory: 512
           Essential: true
       NetworkMode: "awsvpc"
@@ -124,6 +124,15 @@ Resources:
       Memory: "512"
       RequiresCompatibilities:
         - "FARGATE"
+
+  ##
+  ## ::LogGroup
+  ##
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 365
 
   ##
   ## ::TargetGroup
