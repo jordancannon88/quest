@@ -6,17 +6,18 @@ This test can be found [here](https://github.com/rearc/quest)
 
 What do i have to submit ?
 1. Terraform and/or Cloudformation template(s)
-	- This repo contains all Cloudformation templates
+	- [x] This repo contains all Cloudformation templates
 2. Dockerfile
-	- Located `docker/quest/Dockerfile`
+	- [x] Located `docker/quest/Dockerfile`
 3. Screenshot of the secret page
-    - ![](https://user-images.githubusercontent.com/7052925/114751663-a9486c00-9d12-11eb-864e-60c990f7cc59.png)
+    - [x] ![](https://user-images.githubusercontent.com/7052925/114751663-a9486c00-9d12-11eb-864e-60c990f7cc59.png)
 4. URL of your stack
-	- [Quest App](https://jordan-quest-alb-2119162710.us-west-2.elb.amazonaws.com/)
+	- [x] [Quest App](https://jordan-quest-alb-2119162710.us-west-2.elb.amazonaws.com/)
 
+<hr><br />
 ## Repo Overview
 
-![](https://user-images.githubusercontent.com/7052925/114756938-7c975300-9d18-11eb-8284-628b63e4aaeb.png)
+![](https://user-images.githubusercontent.com/7052925/114760479-933fa900-9d1c-11eb-830d-a1abcc07ff21.png)
 
 The repository consists of a set of nested templates that deploy the following:
 
@@ -25,6 +26,7 @@ The repository consists of a set of nested templates that deploy the following:
 - A pair of NAT gateways (one in each zone) to handle outbound traffic.
 - An Application Load Balancer (ALB) to the public subnets to handle inbound traffic.
 - ALB path-based routes for the ECS service to route the inbound traffic.
+- Centralized container logging with Amazon CloudWatch Logs.
 ## Template Details
 
 | Template  | Description                    |
@@ -90,17 +92,17 @@ Deploy the packaged templates into your AWS account with the required parameters
 
 ## Considerations
 
-A posible TODO list:
+A TODO list:
 
 - Deploy Private Link endpoints for ECR, ECS, and S3 to keep communication on the AWS backend.
-- Remove the NATs for security purposes.
-- Create a Lambda function for creating and importing the self-signed SSL certification into ACM. 
+- Remove NAT Gateways for security purposes.
+- Create Lambda function for building and importing the self-signed SSL certification into ACM. 
 
 ## Notes
 
 1. For the first task `Deploy the app in AWS and find the secret page. Use Linux 64-bit as your OS (Amazon Linux preferred)`
     - I opted to use Fargate for simplicity (serveless) and mostly as an excuse to get better with the service.
-    - Fargate `1.4.0` runs on an on Amazon Linux 2 based image [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
+    - Fargate `1.4.0` runs on an Amazon Linux 2 based image [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
 
 2. For the question `What if i find a bug ?`
     - Farget `1.4.0` uses the container runtime `Containerd` instead of `Docker`. For the `/docker` page of Quest it reports `You dont seem to be running in a Docker container` even though it is a container. This may have something to do with it depending on how you detect if the app is running in a docker container (Spitballing here) [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
