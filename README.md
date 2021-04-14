@@ -10,10 +10,13 @@ What do i have to submit ?
 2. Dockerfile
 	- Located `docker/quest/Dockerfile`
 3. Screenshot of the secret page
+    - ![](https://user-images.githubusercontent.com/7052925/114751663-a9486c00-9d12-11eb-864e-60c990f7cc59.png)
 4. URL of your stack
 	- [Quest App](https://jordan-quest-alb-2119162710.us-west-2.elb.amazonaws.com/)
 
 ## Repo Overview
+
+![](https://user-images.githubusercontent.com/7052925/114756938-7c975300-9d18-11eb-8284-628b63e4aaeb.png)
 
 The repository consists of a set of nested templates that deploy the following:
 
@@ -47,6 +50,8 @@ Instructions on how to setup this repo on an AWS account using the AWS CLI.
 
 Clone this repo and navigate into the projects root directory.
 
+##### Example #1
+
 `cd <project_root_directory>`
 
 ### Package
@@ -56,6 +61,8 @@ Package and upload the Cloudformation templates into the S3 Bucket.
 | Flag | Description | Required |
 | ------------- | ------------------------------ | ------------- |
 | `s3-bucket` | The S3 Bucket name where the templates will be uploaded. | Yes |
+
+##### Example #1
 
 `aws cloudformation package --template-file template.yaml --output-template packaged.yaml --s3-bucket <bucket_name>`
 
@@ -73,9 +80,11 @@ Deploy the packaged templates into your AWS account with the required parameters
 | `Image` | The URI of the Docker image to be deployed into ECS. | Yes |
 | `Secret` | The secret word found in the Quest. | No |
 
+##### Example #1
+
 `aws cloudformation deploy --template-file ./packaged.yaml --stack-name <project_name> --parameters  SSLCert=<ssl_cert_arn> Image=<docker_image_uri> Secret=<secret_word>`
 
-##### Example #1
+##### Example #2
 
 `aws cloudformation deploy --template-file ./packaged.yaml --stack-name jordan-quest --parameter-overrides SSLCert="arn:aws:acm:us-west-2:11110000000:certificate/c084ddaf-f361-4f9b-90ec-48f1305bd770" Image="httpd:2.4" Secret="TwelveFactor"`
 
