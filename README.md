@@ -38,9 +38,9 @@ The repository consists of a set of nested templates that deploy the following:
 | `infrastructure/alb/template.yaml`   | This template deploys an ALB to the public subnets, which exposes the ECS services.   |
 | `infrastructure/ecs/template.yaml`   | This template deploys an ECS cluster to the private subnets. Along with a Service for a Docker image.   |
 
-## Manual Deployment
+## CLI Deployment
 
-Instructions on how to setup this repo on an AWS account using the AWS CLI.
+Instructions on how to setup this repo on AWS using the AWS CLI.
 
 ### Prerequisites
 
@@ -93,7 +93,7 @@ Deploy the packaged templates into your AWS account with the required parameters
 
 ## Considerations
 
-A TODO list:
+An improvement list:
 
 - Deploy Private Link endpoints for ECR, ECS, and S3 to keep communication on the AWS backend.
 - Remove NAT Gateways for security purposes.
@@ -106,5 +106,5 @@ A TODO list:
     - Fargate `1.4.0` runs on an Amazon Linux 2 based image [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
 
 2. For the question `What if i find a bug ?`
-    - Farget `1.4.0` uses the container runtime `Containerd` instead of `Docker`. For the `/docker` page of Quest it reports `You dont seem to be running in a Docker container` even though it is a container. This may have something to do with it depending on how you detect if the app is running in a docker container (Spitballing here) [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
+    - Fargate `1.4.0` uses the container runtime `Containerd` instead of `Docker`. For the `/docker` page of Quest it reports `You dont seem to be running in a Docker container` even though it is a container. This may have something to do with it; depending on how you detect if the app is running in a docker container (Spitballing here) [Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/platform_versions.html#available_pv)
 
